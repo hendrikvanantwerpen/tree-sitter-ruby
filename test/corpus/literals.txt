@@ -14,10 +14,12 @@ symbol
 :_bar
 :åäö
 :_
+:☠
 
 ---
 
 (program
+  (simple_symbol)
   (simple_symbol)
   (simple_symbol)
   (simple_symbol)

@@ -336,8 +336,17 @@ static inline bool scan_operator(TSLexer *lexer) {
     }
 }
 
-static inline bool is_iden_char(char c) {
-    return memchr(&NON_IDENTIFIER_CHARS, c, sizeof(NON_IDENTIFIER_CHARS)) == NULL;
+static inline bool is_iden_char(int32_t c) {
+    // Non-ASCII characters are always identifier characters, matching the
+    // grammar's identifier rules. Truncating the code point to a byte here
+    // would misclassify e.g. U+2620 ('\u2620') as a space.
+    if (c > 127) {
+        return true;
+    }
+    if (c < 0) {
+        return false;
+    }
+    return memchr(&NON_IDENTIFIER_CHARS, (char)c, sizeof(NON_IDENTIFIER_CHARS)) == NULL;
 }
 
 static inline bool scan_symbol_identifier(TSLexer *lexer) {
@@ -350,13 +359,13 @@ static inline bool scan_symbol_identifier(TSLexer *lexer) {
         advance(lexer);
     }
 
-    if (is_iden_char((char)lexer->lookahead)) {
+    if (is_iden_char(lexer->lookahead)) {
         advance(lexer);
     } else if (!scan_operator(lexer)) {
         return false;
     }
 
-    while (is_iden_char((char)lexer->lookahead)) {
+    while (is_iden_char(lexer->lookahead)) {
         advance(lexer);
     }
 
@@ -656,7 +665,7 @@ static inline bool scan_short_interpolation(TSLexer *lexer, const bool has_conte
             if (lexer->lookahead == '@') {
                 advance(lexer);
             }
-            is_short_interpolation = is_iden_char((char)lexer->lookahead) && !iswdigit(lexer->lookahead);
+            is_short_interpolation = is_iden_char(lexer->lookahead) && !iswdigit(lexer->lookahead);
         }
 
         if (is_short_interpolation) {
