@@ -156,6 +156,51 @@ module.exports = grammar({
       $._method_rest,
     ),
 
+    // Endless method definitions whose body is a command call (a call with
+    // unparenthesized arguments), e.g. `def foo = puts "bar"`. Analogous to
+    // `command_assignment`, these are only allowed where an `_expression` is,
+    // whereas `method`/`singleton_method` (with an `_arg` body) are `_primary`.
+    command_method: $ => seq('def', $._command_method_rest),
+
+    command_singleton_method: $ => seq(
+      'def',
+      seq(
+        choice(
+          field('object', $._variable),
+          seq('(', field('object', $._arg), ')'),
+        ),
+        choice('.', '::'),
+      ),
+      $._command_method_rest,
+    ),
+
+    _command_method_rest: $ => seq(
+      field('name', $._method_name),
+      optional(field('parameters', alias($.parameters, $.method_parameters))),
+      '=',
+      field('body', choice(
+        $._endless_command_body,
+        alias($.rescue_modifier_command, $.rescue_modifier),
+      )),
+    ),
+
+    _endless_command_body: $ => choice(
+      alias($.command_call, $.call),
+      alias($.command_call_with_block, $.call),
+      alias($.return_command, $.return),
+      alias($.yield_command, $.yield),
+      alias($.break_command, $.break),
+      alias($.next_command, $.next),
+    ),
+
+    rescue_modifier_command: $ => prec(PREC.RESCUE,
+      seq(
+        field('body', $._endless_command_body),
+        'rescue',
+        field('handler', $._arg),
+      ),
+    ),
+
     _method_rest: $ => seq(
       field('name', $._method_name),
       choice(
@@ -654,6 +699,8 @@ module.exports = grammar({
       alias($.yield_command, $.yield),
       alias($.break_command, $.break),
       alias($.next_command, $.next),
+      alias($.command_method, $.method),
+      alias($.command_singleton_method, $.singleton_method),
       $.match_pattern,
       $.test_pattern,
       $._arg,

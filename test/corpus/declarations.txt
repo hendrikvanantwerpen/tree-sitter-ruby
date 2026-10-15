@@ -57,6 +57,34 @@ def foo() = bar rescue (print "error")
   )
 )
 
+====================================
+"end"-less method with command body
+====================================
+
+def foo = bar baz
+def foo(x) = bar.baz x, 1
+def self.foo = bar baz do end
+def foo = bar baz rescue qux
+private def foo = bar baz
+def foo = bar baz and qux
+
+---
+
+(program
+  (method name: (identifier) body: (call method: (identifier) arguments: (argument_list (identifier))))
+  (method name: (identifier) parameters: (method_parameters (identifier))
+    body: (call receiver: (identifier) method: (identifier) arguments: (argument_list (identifier) (integer))))
+  (singleton_method object: (self) name: (identifier)
+    body: (call method: (identifier) arguments: (argument_list (identifier)) block: (do_block)))
+  (method name: (identifier)
+    body: (rescue_modifier body: (call method: (identifier) arguments: (argument_list (identifier))) handler: (identifier)))
+  (call method: (identifier) arguments: (argument_list
+    (method name: (identifier) body: (call method: (identifier) arguments: (argument_list (identifier))))))
+  (binary
+    left: (method name: (identifier) body: (call method: (identifier) arguments: (argument_list (identifier))))
+    right: (identifier))
+)
+
 ===========================
 method as attribute setter
 ===========================
